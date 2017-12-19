@@ -1,0 +1,17 @@
+otu	name
+4450360	Sphingomonas sp.
+58865	Sphingomonas sp.
+334409	Sphingomonas sp.
+895733	Methylobacterium adhaesivum
+575956	Methylobacteriaceae sp.
+714278	Sphingomonas yabuuchia
+941237	Sphingomonas sp.
+1061429	Comamonadaceae sp.
+607212	Sphingomonas sp.
+1111874	Enterobacteriaceae sp.
+1045797	Microbacterium chocolatum
+1091060	Sphingomonadaceae sp.
+734945	Sphingomonas sp.
+4317400	Sphingomonas sp.
+1760354	Microbacterium sp.
+1108960	Sphingomonas sp.

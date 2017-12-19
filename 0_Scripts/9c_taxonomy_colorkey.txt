@@ -1,0 +1,9 @@
+taxon	display_name	color
+Sphingomonadales	Sphingomonads	firebrick
+Methylobacteriaceae	Methylobacteria	tomato
+Alphaproteobacteria	Other Alphaproteobacteria	salmon
+Betaproteobacteria	Betaproteobacteria	y
+Gammaproteobacteria	Gammaproteobacteria	darkolivegreen
+Actinobacteria	Actinobacteria	dodgerblue
+Bacteroidetes	Bacteroidetes	mediumorchid
+Bacteria	Other Bacteria	gray
