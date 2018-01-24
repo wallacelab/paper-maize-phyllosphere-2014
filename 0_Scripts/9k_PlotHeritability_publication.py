@@ -90,7 +90,7 @@ def calc_heritability(infiles):
 
 def plot_heritabilities(data, perms, graphfile, cutoff, figsize):
     fig = plt.figure(figsize=figsize)  # Scale plot with amount of data
-    xleft, xright = -0.05, 1.2
+    xleft, xright = -0.05, 1.35
     colors = ["firebrick" if pval <= cutoff else "gray" for pval in data['empirical_pval']]
 
     # Individual scatter plot
@@ -107,13 +107,20 @@ def plot_heritabilities(data, perms, graphfile, cutoff, figsize):
             violins.append(violin)
 
     # Add empirical p-values
-    text_x = 1.02
-    ax.text(x=text_x, y = -1, s = "p-value", fontsize="xx-small", fontweight="bold", va="center")
+    text_x = 1.17
+    ax.text(x=text_x-0.01, y = -1, s = "p-value", fontsize="xx-small", fontweight="bold", va="center")
     for yval, pval, color in zip(ypos, data['empirical_pval'], colors):
+        pval = "{:.4f}".format(pval)
         if color != "gray": color = "black" # Don't want to colorize same as scatter points
         ax.text(text_x, yval, s=pval, fontsize="xx-small", fontweight="bold", va="center", color=color)
 
-
+    # Add exact heritability
+    text_x = 1.02
+    ax.text(x=text_x+0.04, y=-1, s="h$^2$", fontsize="xx-small", fontweight="bold", va="center")
+    for yval, h2, color in zip(ypos, data['h2'], colors):
+        if color != "gray": color = "black"  # Don't want to colorize same as scatter points
+        h2 = "{:.3f}".format(round(h2, 3))
+        ax.text(text_x, yval, s=h2, fontsize="xx-small", fontweight="bold", va="center", color=color)
 
     # Prettify axes
     ax.set_yticks(ypos)

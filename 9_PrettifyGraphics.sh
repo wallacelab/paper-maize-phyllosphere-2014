@@ -4,6 +4,7 @@
 
 # Software
 KRONA=$HOME/Software/Metagenomics/KronaTools-2.7/bin/ktImportText
+TASSEL5="perl /home/jgwall/Software/TASSEL/tassel-5-standalone/run_pipeline.pl -Xms10g -Xmx40g"
 
 # Directories
 rawdir=0_RawData    # Raw data
@@ -24,6 +25,8 @@ pairdir=$plotdir/9d_PairedDayNightSamples
 alphadir=$plotdir/9f_AlphaDiversity
 betadir=$plotdir/9h_BetaDiversity
 heritdir=$plotdir/9j_Heritability
+gwasoutdir=$plotdir/9n_GWAS
+expressdir=$plotdir/9w_Expression
 
 if [ ! -e $plotdir ]; then mkdir $plotdir; fi
 if [ ! -e $kronadir ]; then mkdir $kronadir; fi
@@ -32,6 +35,8 @@ if [ ! -e $pairdir ]; then mkdir $pairdir; fi
 if [ ! -e $alphadir ]; then mkdir $alphadir; fi
 if [ ! -e $betadir ]; then mkdir $betadir; fi
 if [ ! -e $heritdir ]; then mkdir $heritdir; fi
+if [ ! -e $gwasoutdir ]; then mkdir $gwasoutdir; fi
+if [ ! -e $expressdir ]; then mkdir $expressdir; fi
 
 # Frequently used variables
 qiime_prefix=$qiimedir/2f_otu_table.sample_filtered.no_mitochondria_chloroplast # Raw, non-normalized qiime file
@@ -120,11 +125,10 @@ normalized_otus=$gwasdir/4f_orig_otus.filtered.txt # Normalized qiime file
 # core_diversity_analyses.py -i $normalized_otus -o $alphadir/9j_qiime_diversity_normalized_data -m $qiime_prefix.key.tsv --sampling_depth $rarefaction_level --tree_fp $qiime_prefix.tre --suppress_beta_diversity --suppress_taxa_summary
 
 # Make alpha diversity plots showing increased diversity with date, subpop, and collector. 
-# # targetdir=$alphadir/9j_qiime_diversity_normalized_data/arare_max$rarefaction_level
+# targetdir=$alphadir/9j_qiime_diversity_normalized_data/arare_max$rarefaction_level
 # make_rarefaction_plots.py -i $targetdir/alpha_div_collated/ -m $qiime_prefix.key.tsv -o $targetdir/alpha_rarefaction_plots --colorby date,subpop,collector --generate_average_tables
-# python3 $scriptdir/9j_PlotAlphaDiversity.py -i $targetdir/alpha_rarefaction_plots/average_tables/*.txt -o $alphadir/9j_alpha_diversity.png
+# python3 $scriptdir/9j_PlotAlphaDiversity.py -i $targetdir/alpha_rarefaction_plots/average_tables/*.txt -o $alphadir/9j_alpha_diversity.svg
 
-# TODO: test for statistical significance of alpha-diversity differences among groups?
 
 #########################
 # Beta diversity
@@ -176,7 +180,43 @@ metrics="bray_curtis weighted_unifrac unweighted_unifrac"
 # # Plot beta diversity publication graphics show separation by dna_plate, and tissue-date
 # python3 $scriptdir/9h_PlotBetaDiversity.py -i $betadir/9g_qiime_diversity_normalized/*_pc.txt -o $betadir/9h_beta_diversity -k $qiime_prefix.key.tsv --categories dna_plate tissue_date
 
+# # # Look for correlations between beta diversity and different taxa
+# Rscript $scriptdir/9i_CorrelateBetaDiversity.r -a $gwasdir/4m_diversity.txt -b $gwasdir/4m_otus.txt -o $betadir/9i_diversity_correlations.txt
 
+
+# # Plot different PCs on axes and color by different taxonomic groups
+# for type in png svg; do
+# 
+#   # PC1 by methylobacteria
+#   python3 $scriptdir/9i_PlotTraitsAndColorize.py -i $gwasdir/4m_diversity.txt $gwasdir/4m_otus.txt -x weighted_unifrac_PC1 -y weighted_unifrac_PC2 \
+#     --color qiime.Bacteria.Proteobacteria.Alphaproteobacteria.Rhizobiales.Methylobacteriaceae -o $betadir/9i_weighted_unifrac.pc1.pc2.methylobacteriaceae.$type --cmap Blues
+#   
+#   # PC2 by bacteroidetes
+#   python3 $scriptdir/9i_PlotTraitsAndColorize.py -i $gwasdir/4m_diversity.txt $gwasdir/4m_otus.txt -x weighted_unifrac_PC1 -y weighted_unifrac_PC2 \
+#     --color qiime.Bacteria.Bacteroidetes -o $betadir/9i_weighted_unifrac.pc1.pc2.bacteroidetes.$type --cmap Purples
+#   
+#   # PC3 by sphingomonadaceae
+#   python3 $scriptdir/9i_PlotTraitsAndColorize.py -i $gwasdir/4m_diversity.txt $gwasdir/4m_otus.txt -x weighted_unifrac_PC3 -y weighted_unifrac_PC4 \
+#     --color qiime.Bacteria.Proteobacteria.Alphaproteobacteria.Sphingomonadales.Sphingomonadaceae -o $betadir/9i_weighted_unifrac.pc3.pc4.sphingomonadaceae.$type --cmap Greens
+# 
+# # Opted not to plot the following ones
+# # # #   # PC1 by rhizobiales
+# # # #   python3 $scriptdir/9i_PlotTraitsAndColorize.py -i $gwasdir/4m_diversity.txt $gwasdir/4m_otus.txt -x weighted_unifrac_PC1 -y weighted_unifrac_PC2 \
+# # # #     --color qiime.Bacteria.Proteobacteria.Alphaproteobacteria.Rhizobiales -o $betadir/9i_weighted_unifrac.pc1.pc2.rhizobiales.$type
+# # # #   # PC3 by gammaproteobacteria
+# # # #   python3 $scriptdir/9i_PlotTraitsAndColorize.py -i $gwasdir/4m_diversity.txt $gwasdir/4m_otus.txt -x weighted_unifrac_PC3 -y weighted_unifrac_PC4 \
+# # # #     --color qiime.Bacteria.Proteobacteria.Gammaproteobacteria -o $betadir/9i_weighted_unifrac.pc3.pc4.gammaproteobacteria.$type 
+# # # # 
+# # # #   # PC4 by Hymenobacter
+# # # #   python3 $scriptdir/9i_PlotTraitsAndColorize.py -i $gwasdir/4m_diversity.txt $gwasdir/4m_otus.txt -x weighted_unifrac_PC3 -y weighted_unifrac_PC4 \
+# # # #     --color qiime.Bacteria.Bacteroidetes.Cytophagia.Cytophagales.Cytophagaceae.Hymenobacter -o $betadir/9i_weighted_unifrac.pc3.pc4.hymenobacter.$type
+# # # #    
+# # # #    # PC5 by Actinobacteria
+# # # #   python3 $scriptdir/9i_PlotTraitsAndColorize.py -i $gwasdir/4m_diversity.txt $gwasdir/4m_otus.txt -x weighted_unifrac_PC4 -y weighted_unifrac_PC5 \
+# # # #     --color qiime.Bacteria.Actinobacteria -o $betadir/9i_weighted_unifrac.pc4.pc5.actinobacteria.$type
+#   
+# #   break
+# done
 
 ##################
 # Heritability
@@ -193,7 +233,7 @@ metrics="bray_curtis weighted_unifrac unweighted_unifrac"
 # python3 $scriptdir/9j_CombineHeritTables.py --small $heritdir/9j_otus_herit.small.txt --big $heritdir/9j_otus_herit.bigperms.txt -o $heritdir/9j_otus_herit.combined.txt --type otu
 
 # # Metagenome
-metadir=$heritdir/9j_metagenome_tables
+# metadir=$heritdir/9j_metagenome_tables
 # if [ ! -e $metadir ]; then mkdir $metadir; fi
 # cp $gwasdir/4q_narrow_herit_metagenome?.txt $metadir
 # cp $gwasdir/4s_narrow_herit_bigperms_metagenome?.txt $metadir
@@ -211,11 +251,11 @@ metadir=$heritdir/9j_metagenome_tables
 # python3 $scriptdir/9j_CombineHeritTables.py --small $metadir/4q_narrow_herit_metagenome?.txt --big $metadir/4s_narrow_herit_bigperms_metagenome?.txt \
 #   -o $heritdir/9j_metagenome_herit.combined.txt --type metagenome --metagenome-key $heritdir/9j_metagenome_key.combined.txt --traits $heritdir/9j_*.traits.txt
 
-# Plot heritabilities 
+# # Plot heritabilities 
 # cutoff=0.001
 # # OTUs
 # python3 $scriptdir/9k_PlotHeritability_publication.py -i $gwasdir/4s_narrow_herit_bigperms_otus/*/4r_*_stats.txt -g $heritdir/9k_otu_heritability_pretty \
-#   --pval-cutoff $cutoff -n 20 --figsize 5 6 #--debug
+#   --pval-cutoff $cutoff -n 20 --figsize 5.5 6 #--debug
 
 # Separate heritability plotting into 2 steps so don't have to load everything each time
 # python3 $scriptdir/5_AssembleMetagenomeHeritData.py -i $gwasdir/4s_narrow_herit_bigperms_metagenome*/*/4r_*_stats.txt -o $heritdir/9k_metagenome_data #--debug
@@ -225,46 +265,153 @@ metadir=$heritdir/9j_metagenome_tables
 # Metagenome heritability graphs, etc.
 ###########
 
-# Copy over Fisher Exact and Annotation Enrichment files
+# # Plot heritability of  meteagenome terms
 # cutoff=0.001
-# max_h2=0.98 # Things above this are thought to be artifacts due to their distribution os permuted heritabilities
 # for set in ko cog; do
+#   python3 $scriptdir/9k_PlotMetagenomeHeritData.py --herits $heritdir/9k_metagenome_data.herits.txt  --perms $heritdir/9k_metagenome_data.perms.txt -g $heritdir/9k_metagenome_heritability_pretty.$set \
+#    --pval-cutoff $cutoff -n 115 --figsize 8 10 --key $parsedir/5a_metagenome_key.txt --max-h2 0.98 --traits $heritdir/9j_$set.traits.txt #--debug 
+# #  break
+# done
+
+# # Plot heritability of top meteagenome terms, flagging ones that are likely artifacts
+# cutoff=0.001
+# blups=$gwasdir/4t_combined_good_traits.tassel.txt
+# python3 $scriptdir/9k_PlotArtifactualMetagenomeHeritData.py --herits $heritdir/9k_metagenome_data.herits.txt  --perms $heritdir/9k_metagenome_data.perms.txt -g $heritdir/9k_metagenome_heritability.artifacts \
+#   --pval-cutoff $cutoff --num-goodtraits 8 --figsize 10 6 --key $parsedir/5a_metagenome_key.txt --max-h2 0.98 --seed 2 --blups $blups #--debug 
+
+
+
+# Make metagenome heritability graph
+# cutoff=0.001
+# max_h2=0.98 # Things above this are thought to be artifacts due to their distribution of permuted heritabilities
+# for set in cog ko; do
 #   cp $parsedir/5a_metagenome_key.$set.hierarchy.gexf $heritdir/9l_${set}_hierarchy.gexf
 #   cp $parsedir/5c_annotations.$set.enrichment.reformatted.txt $heritdir/9l_${set}_enrichment.aea.txt
 #   cp $parsedir/5d_fisher_exact.$set.pvals.txt $heritdir/9l_${set}_enrichment.fisher_exact.txt
-
-# #     # Make a grpah file for tweaking in Gephi for publication
+# 
+#     # Make a grpah file for tweaking in Gephi for publication
 #   python3 $scriptdir/9m_MakeMetagenomeHeritGraph.py -i $heritdir/9k_metagenome_data.herits.txt -g $heritdir/9l_${set}_hierarchy.gexf -o $heritdir/9m_${set}_herit \
 #     --pval-cutoff $cutoff --max-herit $max_h2 --fisher $heritdir/9l_${set}_enrichment.fisher_exact.txt
-  
-#   break
+#   
+# #   break
 # done
 
-# Make cobined table of category enrichment
-python3 $scriptdir/9n_CombineEnrichmentStats.py --aea $heritdir/9l_*_enrichment.aea.txt --fisher $heritdir/9l_*_enrichment.fisher_exact.txt --remove-aea-pval-1 \
-  -o $heritdir/9l_metagenome_category_enrichment.combined_pvals.txt
-
-# # # # # # TODO: Break into KEGG / COG terms and graph separately for supplemental data
-# # # # # for set in ko cog; do
-# # # # #   python3 $scriptdir/9k_PlotMetagenomeHeritData.py --herits $heritdir/9k_metagenome_data.herits.txt  --perms $heritdir/9k_metagenome_data.perms.txt -g $heritdir/9k_metagenome_heritability_pretty.$set \
-# # # # #    --pval-cutoff $cutoff -n 115 --figsize 8 10 --key $parsedir/5a_metagenome_key.txt --max-h2 0.98 --traits $heritdir/9j_$set.traits.txt #--debug 
-# # # # # #  break
-# # # # # done
-
-# TODO: Need to check out the traits with h2 above 0.98 to see if they really are artifacts
+# # Make cobined table of category enrichment
+# python3 $scriptdir/9n_CombineEnrichmentStats.py --aea $heritdir/9l_*_enrichment.aea.txt --fisher $heritdir/9l_*_enrichment.fisher_exact.txt --remove-aea-pval-1 \
+#   -o $heritdir/9l_metagenome_category_enrichment.combined_pvals.txt
 
 
+############
+# GWAS Analysis
+############
+
+# # Get a list of all significant hits for all traits; used to filter down to just the right hit-trait combinations (but want to work with a much smaller file than the raw data)
+# ls $gwasdir/4u_gwas/4u_orig_gwas | sed -r "s/_chr.+//" | uniq | sort | uniq > $gwasoutdir/9n_hits.all_traits.txt
+# Rscript -e "x=read.delim('$gwasdir/4x_gwas_hits.clustered.best.txt', stringsAsFactors=F); write(unique(x\$Marker), file='$gwasoutdir/9n_hits.markers.txt');" \
+#   -e "write(unique(x\$Trait), file='$gwasoutdir/9n_hits.traits.txt')"
+# zcat $gwasdir/4u_gwas/4u_orig_gwas/*sitefile.txt.gz | head -n 1 >  $gwasoutdir/9n_hits.sitefiles.txt 
+# find $gwasdir/4u_gwas/4u_orig_gwas/ -name "*sitefile.txt.gz" | parallel zcat | grep --file $gwasoutdir/9n_hits.markers.txt >> $gwasoutdir/9n_hits.sitefiles.txt 
+
+# # # Get a list of "bad" traits whose heritabilities are too high and are likely artifacts and filter them out from the clustered trait analysis
+# max_h2=0.98
+# max_pval=0.001
+# python3 $scriptdir/9n_FilterClusteredHits.py -i $gwasdir/4x_gwas_hits.clustered.best.txt --herits $heritdir/9k_metagenome_data.herits.txt --max-herit $max_h2 \
+#   -o $gwasoutdir/9n_gwas_hits.clustered.best.goodtraits.txt -t $gwasoutdir/9n_hits.badtraits.txt
+# Rscript -e "all=scan('$gwasoutdir/9n_hits.all_traits.txt', what=character()); bad=scan('$gwasoutdir/9n_hits.badtraits.txt', what=character())" \
+#   -e "excluded=intersect(all, bad); write(excluded, file='$gwasoutdir/9n_hits.excluded_traits.txt')"
+
+# # Same as above, but using all the hits instead of just the best one per cluster; this is what was used for a Supplemental Table
+# python3 $scriptdir/9n_FilterClusteredHits.py -i $gwasdir/4x_gwas_hits.clustered.all.txt --herits $heritdir/9k_metagenome_data.herits.txt --max-herit $max_h2 \
+#   -o $gwasoutdir/9n_gwas_hits.clustered.all.goodtraits.txt -t $gwasoutdir/9n_hits.all.badtraits.txt
+# Rscript -e "all=scan('$gwasoutdir/9n_hits.all_traits.txt', what=character()); bad=scan('$gwasoutdir/9n_hits.all.badtraits.txt', what=character())" \
+#   -e "excluded=intersect(all, bad); write(excluded, file='$gwasoutdir/9n_hits.all.excluded_traits.txt')"
 
 
+# # Identify traits with the most number of hits below a given p-value
+# for p in 0.05 0.01; do
+#   python3 $scriptdir/9o_TabulateGwasHits.py -i $gwasoutdir/9n_gwas_hits.clustered.best.goodtraits.txt -p $p -o $gwasoutdir/9o_hits_per_trait.p$p.txt
+# #   python3 $scriptdir/9o_GetGwasSitefileData.py -i $gwasoutdir/9n_gwas_hits.clustered.best.goodtraits.txt -p $p --sitefile $gwasoutdir/9n_hits.sitefiles.txt  -o $gwasoutdir/9o_sitefile_data.p$p.txt
+# #   break
+# done
+
+# Plot Manhatten plots of flowering time + 2 others
+# for trait in flowering_time log_COG0181_1489 log_K02769_7737; do
+#   python3 $scriptdir/9p_GatherGwasData.py --raw $gwasdir/4u_gwas/4u_orig_gwas/${trait}_chr*.pvals.txt --perms $gwasdir/4u_gwas/4v_gwas_results/${trait}.pvals.txt -o $gwasoutdir/9p_$trait.pvals.txt
+# #   break
+# done
+# python3 $scriptdir/9p_PlotGwasData.py -i $gwasoutdir/9p_*.pvals.txt --chromlengths $scriptdir/0_Zmays_agpv3_chrom_lengths.txt -o $gwasoutdir/9p_manhatten_plots \
+#   --flowering-genes $scriptdir/0_flowering_candidate_genes.csv --candidate-window 1000000  #--sparsify 0.01
+
+# # # Get distances between each hit and the closest flowering time candidate
+# Rscript -e "x=read.delim('$gwasoutdir/9n_gwas_hits.clustered.best.goodtraits.txt'); x=subset(x, x\$Trait=='flowering_time')"\
+#   -e "write.table(x, file='$gwasoutdir/9q_flowering_time.clusters.txt', sep='\t', quote=F, row.names=F, col.names=T)"
+# python3 $scriptdir/9q_GetNearestFloweringCandidates.py -i $gwasoutdir/9p_flowering_time.pvals.txt --flowering-genes $scriptdir/0_flowering_candidate_genes.csv \
+#   -o $gwasoutdir/9q_flowering_time.all.nearest_candidates.txt    # All hits
+# python3 $scriptdir/9q_GetNearestFloweringCandidates.py -i $gwasoutdir/9q_flowering_time.clusters.txt --flowering-genes $scriptdir/0_flowering_candidate_genes.csv \
+#   -o $gwasoutdir/9q_flowering_time.clusters.nearest_candidates.txt  # just the best hit in each cluster
 
 
+# # # Table of regions that have repeated hits
+# metagenome_key=$parsedir/5a_metagenome_key.txt
+# for winsize in 1000000 100000 10000; do
+#   python3 $scriptdir/9r_TabulateHitClusters.py -i $gwasoutdir/9n_gwas_hits.clustered.best.goodtraits.txt -o $gwasoutdir/9r_common_hits.winsize$winsize --winsize $winsize \
+#     --cors $parsedir/5f_blup_correlations.txt --min-score 1.5 --pval-cutoff 0.01
+#   python3 $scriptdir/9s_PrettifyShortHitTable.py -i $gwasoutdir/9r_common_hits.winsize$winsize.windows_short.filtered.txt -m $metagenome_key -o $gwasoutdir/9s_clusters_short.win$winsize.pretty.txt
+# #   break
+# done
+
+# # Just anlayze 100k in depth
+# winsize=100000
+# blups=$gwasdir/4u_combined_good_traits.update_flowering.tassel.txt
+# # Plot correlations among traits
+# python3 $scriptdir/9t_AnalyzeClusteredTraits.py -i $gwasoutdir/9r_common_hits.winsize$winsize.windows_short.filtered.txt -o $gwasoutdir/9t_common_hits.winsize$winsize.trait_correlations --blups $blups
+
+# # Look at linkage disequilibrium in this region
+# genos=$gwasdir/4u_gwas/all_genos.hmp.txt.gz
+# zcat $genos | tail -n +2 | cut -f1-4 > $gwasoutdir/9u_ld.all_markers.txt
+# python3 $scriptdir/9u_GetSitesForLd.py -i $gwasoutdir/9s_clusters_short.win$winsize.pretty.txt -m $gwasoutdir/9u_ld.all_markers.txt -o $gwasoutdir/9u_ld.target_markers.txt
+# grep -e "gene" -e "exon" $HOME/Projects/0_RawData/MaizeGenome/Zea_mays.AGPv3.30.gff3 > $gwasoutdir/9u_maize_genes.gff3
+
+# while read marker sitenum; do
+#   $TASSEL5 -h $genos -ld -ldType SiteByAll -ldTestSite $sitenum -ldHetTreatment Homozygous -export $gwasoutdir/9u_ld.$marker.txt
+#   # Plot at two different scales
+#   python3 $scriptdir/9u_PlotLd.py -i $gwasoutdir/9u_ld.$marker.txt -o $gwasoutdir/9u_ld.$marker.ld_window --big-winsize 10000000 --small-winsize 100000 --gff $gwasoutdir/9u_maize_genes.gff3
+# #   break
+# done < $gwasoutdir/9u_ld.target_markers.txt
+# 
+# 
+# # # Now look at phenotype distributions by alleles to make sure that separation is real and not some strange artifact
+# genos=$gwasdir/4u_gwas/all_genos.hmp.txt.gz
+# blups=$gwasdir/4u_combined_good_traits.update_flowering.tassel.txt
+# $TASSEL5 -h $genos -includeSiteNamesInFile $gwasoutdir/9n_hits.markers.txt -export $gwasoutdir/9v_hit_genos.hmp.txt
+# python3 $scriptdir/9v_PlotPhenosByAllelesForHits.py -i $gwasoutdir/9n_gwas_hits.clustered.best.goodtraits.txt --genos $gwasoutdir/9v_hit_genos.hmp.txt --phenos $blups --pval-cutoff 0.01 -o $gwasoutdir/9v_hit_distributions.png
 
 
+##############
+# Expression correlation
+##############
+
+# python3 $scriptdir/9w_CorrelateTraitsWithExpression.py -i $gwasdir/4m_diversity.txt --traits weighted_unifrac_PC1 --genes GRMZM2G031545 --expression $scriptdir/0_kremling_expression_data.txt \
+#   -o $expressdir/9w_diversity.expression.png --key $scriptdir/0_kremling_expression_key.txt
+# python3 $scriptdir/9w_CorrelateTraitsWithExpression.py -i $gwasdir/4m_metagenome.txt --traits D_Arginine_and_D_ornithine_metabolism_11861 K14977_11335 COG2319_3037 COG3484_4168 K07395_9407 --genes GRMZM2G031545 \
+#   --expression $scriptdir/0_kremling_expression_data.txt -o $expressdir/9w_metagenome.expression.png --key $scriptdir/0_kremling_expression_key.txt
+# 
+# # SVG for supplemental figure
+# python3 $scriptdir/9w_CorrelateTraitsWithExpression.py -i $gwasdir/4m_metagenome.txt --traits D_Arginine_and_D_ornithine_metabolism_11861 K14977_11335 COG2319_3037 COG3484_4168 K07395_9407 --genes GRMZM2G031545 \
+#   --expression $scriptdir/0_kremling_expression_data.txt -o $expressdir/9w_metagenome.expression.svg --key $scriptdir/0_kremling_expression_key.txt 
+
+# # Quick check that no correlation exists with other nearby genes; first assemble a list, then pass it all to the plot script
+# cut -f9 $gwasoutdir/9u_ld.S7_165387694.ld_window.genes.gff | grep 'ID=gene:' | sed -r "s|ID=gene:([^;]+);.+|\1|"> $expressdir/9x_chr7_target_genes.txt
+# readarray genes < $expressdir/9x_chr7_target_genes.txt
+# genes=`echo ${genes[@]}`
+# python3 $scriptdir/9w_CorrelateTraitsWithExpression.py -i $gwasdir/4m_metagenome.txt --traits D_Arginine_and_D_ornithine_metabolism_11861 K14977_11335 COG2319_3037 COG3484_4168 K07395_9407 --genes $genes \
+#   --expression $scriptdir/0_kremling_expression_data.txt -o $expressdir/9x_metagenome.expression.png --key $scriptdir/0_kremling_expression_key.txt 
 
 
+###############
+# Citations needed
+###############
 
-
-####
-# Temporary - Collapse things to Genus level for Sahar
-# filter_samples_from_otu_table.py -i $qiime_prefix.biom --min_count 10000 -o tmp_sahar/filtered.biom
-# summarize_taxa.py -i tmp_sahar/filtered.biom --level 6 --mapping $qiime_prefix.key.tsv -o tmp_sahar
+# This isn't a graphic per se, just a place to collect all the packages and libraries I need to cite in the paper
+grep "import" $scriptdir/*.py | sort | uniq > $plotdir/9z_python_imports.txt
+grep "library(" $scriptdir/*.r | sort | uniq > $plotdir/9z_r_libraries.txt

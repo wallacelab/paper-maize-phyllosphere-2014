@@ -10,12 +10,19 @@ import re
 debug = False
 
 root_key={
+    # KO terms
     "Metabolism" : {'color': {'r': 0, 'g': 0, 'b': 255, 'a': 0}},
     "Unclassified" :    {'color': {'r': 255, 'g': 255, 'b': 0, 'a': 0}},
     "Cellular Processes"  : {'color': {'r': 0, 'g': 255, 'b': 0, 'a': 0}} ,
     "Environmental Information Processing" : {'color': {'r': 0, 'g': 255, 'b': 255, 'a': 0}},
     "Genetic Information Processing" : {'color': {'r': 255, 'g': 0, 'b': 255, 'a': 0}},
-    "Human Diseases": {'color': {'r': 0, 'g': 0, 'b': 0, 'a': 0}}
+    "Human Diseases": {'color': {'r': 0, 'g': 0, 'b': 0, 'a': 0}},
+
+    # COG terms
+    "POORLY CHARACTERIZED": {'color': {'r': 255, 'g': 255, 'b': 0, 'a': 0}},
+    "CELLULAR PROCESSES AND SIGNALING": {'color': {'r': 0, 'g': 255, 'b': 0, 'a': 0}} ,
+    "METABOLISM": {'color': {'r': 0, 'g': 0, 'b': 255, 'a': 0}},
+    "INFORMATION STORAGE AND PROCESSING":  {'color': {'r': 255, 'g': 0, 'b': 255, 'a': 0}}
 }
 
 def main():

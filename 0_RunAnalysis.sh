@@ -114,12 +114,3 @@ blups=$gwasdir/4u_combined_good_traits.update_flowering.tassel.txt  # file of BL
 min_cluster_score=1.5   # Number of traits (after correlation correction) that hit in the same window to look at clustering
 cluster_p=0.01  # Empirical p-value cutoff to use when analyzing clusters of hits
 ./5_ParseGwasResults.sh $scriptdir $parsedir $gwasdir $qiime_prefix $AEA $herit_pval_cutoff $max_h2 $h2_perms $chromlengths $blups $min_cluster_score $cluster_p
-
-
-# # # # # # Correlate OTU abundance with RNA transcript levels
-# # # # # otus="$divdir/3e_*.collapsed_taxa.txt"
-# # # # # genos=$gwasdir/4a_samples_sorted_filtered.hmp.txt.gz
-# # # # # aliasfile=$scriptdir/0_inbred_aliases_manual.txt
-# # # # # min_nonzero=0.5 # minimum fractio of nonzero counts in OTUs/transcripts to keep
-# # # # # ./5_CorrelateWithPlantTranscription.sh $scriptdir $transdir "$otus" $transcript_data $otudir $genos $aliasfile $transcript_key $min_nonzero
-
