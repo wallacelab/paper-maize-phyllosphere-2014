@@ -9,7 +9,8 @@
 #   GNU parallel 20130922 
 #   BIOM 2.1.5
 #   QIIME 1.9.1
-#   R 3.3.3 with packages TODO: Grep included packages and get versions
+#   R 3.3.3 with packages argparse 1.0.2 , car 2.1-4, colorspace 1.2-6, corrplot 0.77, gplots 3.0.1, Hotelling 1.0-4, KEGGREST 1.12.3, lme4 1.1-12, parallel 3.4.0, and plotrix 3.6-4.
+#   Python 3.4.3 with packages  argparse 1.1, biokit 0.1.2, biom-format 2.1.5, collections, gzip, itertools, json 2.0.9, math, matplotlib 1.5.0, networkx 1.11, numpy 1.10.1, os, pandas 0.16.2, re 2.2.1, scipy 0.16.1, seaborn 0.8.1 , statsmodels 0.6.1, string, and sys
 
 # Other software
 KRONA=$HOME/Software/Metagenomics/KronaTools-2.7/bin/ktImportText   # KronaTools 2.7, from https://github.com/marbl/Krona/wiki/KronaTools, down
@@ -21,7 +22,7 @@ rawdir=0_RawData    # Raw data
 scriptdir=0_Scripts # Pipeline scripts
 qualdir=$rawdir/0a_QualityCheck  # Quality control checks of raw reads
 genodir=0b_MaizeGenotypes        # Maize genotypes for heritability and GWAS analysis
-parsedir=1_ParseRawSequence      # Parse raw sequence into trimmed, pair-joined contigs
+seqdir=1_ParseRawSequence      # Parse raw sequence into trimmed, pair-joined contigs
 qiimedir=2_QiimeOtus
 divdir=3_Diversity
 gwasdir=4_GWAS
@@ -31,7 +32,7 @@ parsedir=5_ParseGwas
 
 if [ ! -e $qualdir ]; then mkdir $qualdir; fi
 if [ ! -e $genodir ]; then mkdir $genodir; fi
-if [ ! -e $parsedir ]; then mkdir $parsedir; fi
+if [ ! -e $seqdir ]; then mkdir $seqdir; fi
 if [ ! -e $qiimedir ]; then mkdir $qiimedir; fi
 if [ ! -e $divdir ]; then mkdir $divdir; fi
 if [ ! -e $gwasdir ]; then mkdir $gwasdir; fi
@@ -65,14 +66,14 @@ chromlengths=$scriptdir/0_Zmays_agpv3_chrom_lengths.txt
 # min_count=100   # filter out sites that don't have genotypes for at least this many samples
 # ./0b_GatherMaizeGenotypes.sh $scriptdir $genodir $plate_key $source_genos $source_keyfile $additional_samples "$synonyms" "$TASSEL5" $min_freq $min_count
 
-# # Parse raw reads - quality filter, join paired ends, and add sample names
-# ./1_ParseRawReads.sh $rawdir $scriptdir $parsedir 
+# # # Parse raw reads - quality filter, join paired ends, and add sample names
+# ./1_ParseRawReads.sh $rawdir $scriptdir $seqdir 
 
-# # QIIME OTU picking
-# min_sample_abundance_over_blanks=1.1  # Ratio of a sample's reads to the highest blank for it to pass filtering
-# read_dist=$parsedir/1b_read_counts.txt
-# min_otu_size=10    # Minimum number of times an OTU has to be seen to be picked by QIIME (default is 2)
-# ./2_PickQiimeOtus.sh $scriptdir $qiimedir $parsedir $plate_key $read_dist $min_otu_size $min_sample_abundance_over_blanks $ignore_samples $maxprocs $KRONA
+# QIIME OTU picking
+min_sample_abundance_over_blanks=1.1  # Ratio of a sample's reads to the highest blank for it to pass filtering
+read_dist=$seqdir/1b_read_counts.txt
+min_otu_size=10    # Minimum number of times an OTU has to be seen to be picked by QIIME (default is 2)
+./2_PickQiimeOtus.sh $scriptdir $qiimedir $seqdir $plate_key $read_dist $min_otu_size $min_sample_abundance_over_blanks $ignore_samples $maxprocs $KRONA $rawdir
 
 # # # Comunity diversity statistics; also determines the core community
 # prefix=$qiimedir/2f_otu_table.sample_filtered.no_mitochondria_chloroplast
@@ -105,12 +106,12 @@ chromlengths=$scriptdir/0_Zmays_agpv3_chrom_lengths.txt
 #   $gwas_perms $chromlengths "$TASSEL5" $cogdir $maxprocs $gwas_procs $empirical_pval_cutoff $all_flowering $cluster_cutoff
 
 
-# Parse the GWAS results
-qiime_prefix=$qiimedir/2f_otu_table.sample_filtered.no_mitochondria_chloroplast
-herit_pval_cutoff=0.001
-max_h2=0.98 # Some traits have really, really high heritabilities that are probably artifacts, so filter out
-h2_perms=100000  # number of random permutations for metagenome Annotation Enrichment Analysis
-blups=$gwasdir/4u_combined_good_traits.update_flowering.tassel.txt  # file of BLUPs to use for interpreting GWAS results
-min_cluster_score=1.5   # Number of traits (after correlation correction) that hit in the same window to look at clustering
-cluster_p=0.01  # Empirical p-value cutoff to use when analyzing clusters of hits
-./5_ParseGwasResults.sh $scriptdir $parsedir $gwasdir $qiime_prefix $AEA $herit_pval_cutoff $max_h2 $h2_perms $chromlengths $blups $min_cluster_score $cluster_p
+# # Parse the GWAS results
+# qiime_prefix=$qiimedir/2f_otu_table.sample_filtered.no_mitochondria_chloroplast
+# herit_pval_cutoff=0.001
+# max_h2=0.98 # Some traits have really, really high heritabilities that are probably artifacts, so filter out
+# h2_perms=100000  # number of random permutations for metagenome Annotation Enrichment Analysis
+# blups=$gwasdir/4u_combined_good_traits.update_flowering.tassel.txt  # file of BLUPs to use for interpreting GWAS results
+# min_cluster_score=1.5   # Number of traits (after correlation correction) that hit in the same window to look at clustering
+# cluster_p=0.01  # Empirical p-value cutoff to use when analyzing clusters of hits
+# ./5_ParseGwasResults.sh $scriptdir $parsedir $gwasdir $qiime_prefix $AEA $herit_pval_cutoff $max_h2 $h2_perms $chromlengths $blups $min_cluster_score $cluster_p

@@ -45,3 +45,14 @@ for readdir in $parsedir/*/; do
   count=$(($count/2))   # 2 lines per fasta entry
   echo -e "$sample\t$count" >> $readcount
 done
+
+# Get median length in each file
+medians=$parsedir/1c_median_lengths.txt
+echo -e "sample\tmedian_read_length" > $medians
+for readdir in $parsedir/*/; do
+  readdir=${readdir%/}
+  sample=`echo $readdir | sed -r "s/.+_(LMA._.+_14A.+)_........_........_R./\1/" `  # convoluted way to extract sample name from folder
+  zcat  $readdir/joined_with_sample_name.fasta.gz  | grep -v "^>" | awk '{ print length($0); }' > $readdir/$sample.lengths.txt
+  median=`Rscript -e "cat(median(scan('$readdir/$sample.lengths.txt')))"`
+  echo -e "$sample\t$median" >> $medians
+done

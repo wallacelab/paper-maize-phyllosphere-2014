@@ -409,9 +409,9 @@ metrics="bray_curtis weighted_unifrac unweighted_unifrac"
 
 
 ###############
-# Citations needed
+# Minor cleanup stuff
 ###############
 
-# This isn't a graphic per se, just a place to collect all the packages and libraries I need to cite in the paper
-grep "import" $scriptdir/*.py | sort | uniq > $plotdir/9z_python_imports.txt
-grep "library(" $scriptdir/*.r | sort | uniq > $plotdir/9z_r_libraries.txt
+# # This isn't a graphic per se, just a place to collect all the packages and libraries I need to cite in the paper
+# grep --no-filename "import" $scriptdir/*.py | sed -e "s/import //" -e "s/from //" | sort | uniq  > $plotdir/9z_python_imports.txt
+# grep --no-filename "library(" $scriptdir/*.r | sort | uniq > $plotdir/9z_r_libraries.txt
