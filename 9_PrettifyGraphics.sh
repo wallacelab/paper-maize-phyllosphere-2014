@@ -334,7 +334,7 @@ metrics="bray_curtis weighted_unifrac unweighted_unifrac"
 # #   break
 # done
 
-# Plot Manhatten plots of flowering time + 2 others
+# Plot Manhatten plots of flowering time + 2 others (unifract not included in publication; used for a seminar)
 # for trait in flowering_time log_COG0181_1489 log_K02769_7737; do
 #   python3 $scriptdir/9p_GatherGwasData.py --raw $gwasdir/4u_gwas/4u_orig_gwas/${trait}_chr*.pvals.txt --perms $gwasdir/4u_gwas/4v_gwas_results/${trait}.pvals.txt -o $gwasoutdir/9p_$trait.pvals.txt
 # #   break
@@ -349,6 +349,14 @@ metrics="bray_curtis weighted_unifrac unweighted_unifrac"
 #   -o $gwasoutdir/9q_flowering_time.all.nearest_candidates.txt    # All hits
 # python3 $scriptdir/9q_GetNearestFloweringCandidates.py -i $gwasoutdir/9q_flowering_time.clusters.txt --flowering-genes $scriptdir/0_flowering_candidate_genes.csv \
 #   -o $gwasoutdir/9q_flowering_time.clusters.nearest_candidates.txt  # just the best hit in each cluster
+
+
+# # Get the closest genes for each hit. Cutoff of 0.01 is for text b/c those are the believable ones (low pval and best in cluster); cutoff of 0.1 is for supplemental so people can see everything.
+# genes=$scriptdir/0_agpv3_genes.gff
+# python3 $scriptdir/9q_GetNearestCandidateGenes.py -i $gwasoutdir/9n_gwas_hits.clustered.best.goodtraits.txt -o $gwasoutdir/9q_all_traits.nearest_candidates --pval-cutoff 0.01 --gff $genes \
+#   --key $heritdir/9j_metagenome_key.combined.txt #--debug
+# python3 $scriptdir/9q_GetNearestCandidateGenes.py -i $gwasoutdir/9n_gwas_hits.clustered.all.goodtraits.txt -o $gwasoutdir/9q_all_traits.nearest_candidates.pval_0.1 --pval-cutoff 0.1 --gff $genes \
+#   --key $heritdir/9j_metagenome_key.combined.txt #--debug
 
 
 # # # Table of regions that have repeated hits
@@ -387,6 +395,8 @@ metrics="bray_curtis weighted_unifrac unweighted_unifrac"
 # python3 $scriptdir/9v_PlotPhenosByAllelesForHits.py -i $gwasoutdir/9n_gwas_hits.clustered.best.goodtraits.txt --genos $gwasoutdir/9v_hit_genos.hmp.txt --phenos $blups --pval-cutoff 0.01 -o $gwasoutdir/9v_hit_distributions.png
 
 
+
+
 ##############
 # Expression correlation
 ##############
@@ -415,3 +425,6 @@ metrics="bray_curtis weighted_unifrac unweighted_unifrac"
 # # This isn't a graphic per se, just a place to collect all the packages and libraries I need to cite in the paper
 # grep --no-filename "import" $scriptdir/*.py | sed -e "s/import //" -e "s/from //" | sort | uniq  > $plotdir/9z_python_imports.txt
 # grep --no-filename "library(" $scriptdir/*.r | sort | uniq > $plotdir/9z_r_libraries.txt
+
+# # Collect file names for the SRA submission
+# Rscript $scriptdir/9z_CollectFileNamesForSra.r -i $rawdir/*.fastq.gz -o $plotdir/9z_sra_file_names.txt
