@@ -120,7 +120,7 @@ normalized_otus=$gwasdir/4f_orig_otus.filtered.txt # Normalized qiime file
 # Rscript $scriptdir/9h_AnalyzeAlphaDiversityCofactors_publication.r -i $alphadir/9g_alpha_diversity_normalized_data.non_redundant_metrics.txt -o $alphadir/9i_alpha_diversity_normalized_data.pretty \
 #   -f $cofactors -m $qiime_prefix.key.tsv -n 13
 
-rarefaction_level=9500  # Smallest value in my normalized dataset is 9664, so get close to that
+# rarefaction_level=9500  # Smallest value in my normalized dataset is 9664, so get close to that
 # core_diversity_analyses.py -i $qiime_prefix.biom -o $alphadir/9j_qiime_diversity_orig_data -m $qiime_prefix.key.tsv --sampling_depth $rarefaction_level --tree_fp $qiime_prefix.tre --suppress_beta_diversity --suppress_taxa_summary
 # core_diversity_analyses.py -i $normalized_otus -o $alphadir/9j_qiime_diversity_normalized_data -m $qiime_prefix.key.tsv --sampling_depth $rarefaction_level --tree_fp $qiime_prefix.tre --suppress_beta_diversity --suppress_taxa_summary
 
@@ -129,22 +129,22 @@ rarefaction_level=9500  # Smallest value in my normalized dataset is 9664, so ge
 # make_rarefaction_plots.py -i $targetdir/alpha_div_collated/ -m $qiime_prefix.key.tsv -o $targetdir/alpha_rarefaction_plots --colorby date,subpop,collector --generate_average_tables
 # python3 $scriptdir/9j_PlotAlphaDiversity.py -i $targetdir/alpha_rarefaction_plots/average_tables/*.txt -o $alphadir/9j_alpha_diversity.svg
 
-# Do a statistical test of significance on the above alpha diversity
-targetdir=$alphadir/9j_qiime_diversity_normalized_data/arare_max$rarefaction_level
-pval_cutoff=0.05
-for infile in $targetdir/alpha_div_collated/*.txt; do
-  base=`basename $infile`
-  base=${base/.txt/}
-  outdir=$targetdir/${base}_stats
-  compare_alpha_diversity.py -i $infile -m $qiime_prefix.key.tsv -o $outdir --test_type nonparametric --num_permutations 10000 --categories date,subpop,collector
-  
-  for pvals in $outdir/*_stats.txt; do
-    outfile=${pvals/.txt/.trimmed.txt}
-    Rscript -e "x=read.delim('$pvals'); x=subset(x, x\$p.value <= $pval_cutoff); write.table(x, file='$outfile', sep='\t', quote=F, row.names=F, col.names=T)"
-#     break
-  done
-#   break
-done
+# # Do a statistical test of significance on the above alpha diversity
+# targetdir=$alphadir/9j_qiime_diversity_normalized_data/arare_max$rarefaction_level
+# pval_cutoff=0.05
+# for infile in $targetdir/alpha_div_collated/*.txt; do
+#   base=`basename $infile`
+#   base=${base/.txt/}
+#   outdir=$targetdir/${base}_stats
+#   compare_alpha_diversity.py -i $infile -m $qiime_prefix.key.tsv -o $outdir --test_type nonparametric --num_permutations 10000 --categories date,subpop,collector
+#   
+#   for pvals in $outdir/*_stats.txt; do
+#     outfile=${pvals/.txt/.trimmed.txt}
+#     Rscript -e "x=read.delim('$pvals'); x=subset(x, x\$p.value <= $pval_cutoff); write.table(x, file='$outfile', sep='\t', quote=F, row.names=F, col.names=T)"
+# #     break
+#   done
+# #   break
+# done
 
 #########################
 # Beta diversity

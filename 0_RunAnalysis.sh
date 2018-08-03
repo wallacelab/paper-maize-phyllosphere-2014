@@ -27,8 +27,7 @@ qiimedir=2_QiimeOtus
 divdir=3_Diversity
 gwasdir=4_GWAS
 parsedir=5_ParseGwas
-
-# transdir=5_Transcription
+simdir=6_PowerSimulation
 
 if [ ! -e $qualdir ]; then mkdir $qualdir; fi
 if [ ! -e $genodir ]; then mkdir $genodir; fi
@@ -37,8 +36,7 @@ if [ ! -e $qiimedir ]; then mkdir $qiimedir; fi
 if [ ! -e $divdir ]; then mkdir $divdir; fi
 if [ ! -e $gwasdir ]; then mkdir $gwasdir; fi
 if [ ! -e $parsedir ]; then mkdir $gwasdir; fi
-
-# if [ ! -e $transdir ]; then mkdir $transdir; fi
+if [ ! -e $simdir ]; then mkdir $simdir; fi
 
 
 # Global variables
@@ -69,11 +67,11 @@ chromlengths=$scriptdir/0_Zmays_agpv3_chrom_lengths.txt
 # # # Parse raw reads - quality filter, join paired ends, and add sample names
 # ./1_ParseRawReads.sh $rawdir $scriptdir $seqdir 
 
-# QIIME OTU picking
-min_sample_abundance_over_blanks=1.1  # Ratio of a sample's reads to the highest blank for it to pass filtering
-read_dist=$seqdir/1b_read_counts.txt
-min_otu_size=10    # Minimum number of times an OTU has to be seen to be picked by QIIME (default is 2)
-./2_PickQiimeOtus.sh $scriptdir $qiimedir $seqdir $plate_key $read_dist $min_otu_size $min_sample_abundance_over_blanks $ignore_samples $maxprocs $KRONA $rawdir
+# # QIIME OTU picking
+# min_sample_abundance_over_blanks=1.1  # Ratio of a sample's reads to the highest blank for it to pass filtering
+# read_dist=$seqdir/1b_read_counts.txt
+# min_otu_size=10    # Minimum number of times an OTU has to be seen to be picked by QIIME (default is 2)
+# ./2_PickQiimeOtus.sh $scriptdir $qiimedir $seqdir $plate_key $read_dist $min_otu_size $min_sample_abundance_over_blanks $ignore_samples $maxprocs $KRONA $rawdir
 
 # # # Comunity diversity statistics; also determines the core community
 # prefix=$qiimedir/2f_otu_table.sample_filtered.no_mitochondria_chloroplast
@@ -115,3 +113,20 @@ min_otu_size=10    # Minimum number of times an OTU has to be seen to be picked 
 # min_cluster_score=1.5   # Number of traits (after correlation correction) that hit in the same window to look at clustering
 # cluster_p=0.01  # Empirical p-value cutoff to use when analyzing clusters of hits
 # ./5_ParseGwasResults.sh $scriptdir $parsedir $gwasdir $qiime_prefix $AEA $herit_pval_cutoff $max_h2 $h2_perms $chromlengths $blups $min_cluster_score $cluster_p
+
+
+# Do a simulation study as requested by reviewers. (Added after initial manuscript submission)
+#   NOTE: This step generally used more recent software and package versions than the above versions because a system update had taken place between submission and revisions
+genotypes=$gwasdir/4u_gwas/all_genos.hmp.txt.gz
+gwas_outdir=$gwasdir/4u_gwas/4u_orig_gwas/  # Directory where original GWAS results are kept
+genos_bychrom_prefix=$gwasdir/4u_gwas/chr
+phenotypes=$gwasdir/4u_combined_good_traits.update_flowering.tassel.txt
+covariate=$gwasdir/4u_flowering_covariate.interpolated.tassel.txt
+permdir=$gwasdir/4u_gwas/4u_permuted_genos
+traits="flowering_time log_COG4679_3080 weighted_unifrac_PC1 log_qiime.Bacteria.Proteobacteria.Alphaproteobacteria.Rhizobiales.Methylobacteriaceae.Methylobacterium.adhaesivum.591699"   # Traits to run simulations on
+# traits="log_COG4679_3080 weighted_unifrac_PC1 log_qiime.Bacteria.Proteobacteria.Alphaproteobacteria.Rhizobiales.Methylobacteriaceae.Methylobacterium.adhaesivum.591699"   # Traits to run simulations on
+num_qtn="5 20 100"  # Comma-separated list of number of QTN to simulate in each dataset
+herits="0.2 0.5 0.8"    # Comma-separated list of heritabilities to simulate. NOTE: This is equivalent to the fraction variance explained _after_ fitting a kinship matrix.
+nreps=10   # number of replicate simulations at each QTN/heritability level
+empirical_pval_cutoff=0.1
+./6_DoSimulationAnalysis.sh $scriptdir $simdir $genotypes $phenotypes $covariate "$traits" "$num_qtn" "$herits" $nreps $gwas_outdir $genos_bychrom_prefix $chromlengths $permdir $empirical_pval_cutoff $maxprocs "$TASSEL5"

@@ -34,25 +34,39 @@ def main():
     trait="+".join(traits)
     # print(trait)
 
+    # Load simulated QTL
+    qtl = load_qtl(args.qtl, args.hapmap, trait)
+
     # Get adjusted p-values if permutations supplied
-    if args.perms:
-        print("\tCalculating empirical p-values based on permutation p-values in",args.perms)
-        results = calc_empirical_pvals(results, args.perms)
-        # Filter and print out
-        outtext = args.outprefix + ".p_adjusted.txt"
-        print("\t\tWriting out results with empirical p-values less than", args.empirical_p_cutoff,"to",outtext)
-        output = pd.concat(results)
-        output = output.loc[output['empirical_pval'] <= args.empirical_p_cutoff,:]
-        if hasattr(pd, "sort"): # Have to test for sort() because got deprecated after pandas 0.17
-            output = output.sort(columns=['empirical_pval', 'Chr', 'Pos'])   # Pandas 0.16 and prior
-        else:
-            output = output.sort_values(by=['empirical_pval', 'Chr', 'Pos'], axis='index')  # Pandas 0.17 and later
-        output.to_csv(outtext, sep='\t')
+    print("\tCalculating empirical p-values based on permutation p-values in",args.perms)
+    results = calc_empirical_pvals(results, args.perms)
+
+    # # Filter to just empirical p-values I care about
+    outtext = args.outprefix + ".found_qtl.txt"
+    print("\t\tWriting out QTL with empirical p-values less than", args.empirical_p_cutoff,"to",outtext)
+    output = pd.concat(results)
+
+    # Filter to just QTL
+    qtl_names = set(qtl['rs#'])
+    is_qtn = [m in qtl_names for m in output['Marker']]
+    output = output.loc[is_qtn,:]
+    print("\t\t\tFound",len(output),'QTN')
+
+    # Filter to empirical p-values
+    output = output.loc[output['empirical_pval'] <= args.empirical_p_cutoff,:]
+    if hasattr(pd, "sort"): # Have to test for sort() because got deprecated after pandas 0.17
+        output = output.sort(columns=['empirical_pval', 'Chr', 'Pos'])   # Pandas 0.16 and prior
+    else:
+        output = output.sort_values(by=['empirical_pval', 'Chr', 'Pos'], axis='index')  # Pandas 0.17 and later
+    print("\t\t\tFound", len(output), 'QTN with empirical p-values <=',args.empirical_p_cutoff)
+
+    # Print out
+    output.to_csv(outtext, sep='\t')
 
     # Make plot
     results = pd.concat(results)
     chrom_offsets = load_chromlengths(args.chromlengths)
-    plot_gwas(results, chrom_offsets, args.outprefix, args.rasterize, args.sparsify, trait)
+    plot_gwas(results, chrom_offsets, args.outprefix, args.rasterize, args.sparsify, trait, qtl, args.empirical_p_cutoff)
 
 
 
@@ -61,6 +75,8 @@ def parse_args():
     parser.add_argument("-i", "--infiles", nargs="*", help="List of files with GWAS results; requires columns Trait, Chr, Pos, and p")
     parser.add_argument("-o", "--outprefix", help="Output file prefix")
     parser.add_argument("-c", "--chromlengths", help="File of chromosome lengths")
+    parser.add_argument("-q", "--qtl", help="File of simulated QTL")
+    parser.add_argument("-m", "--hapmap", help="Hapmap file that includes QTL (to get physical positions)")
     parser.add_argument("-p", "--perms", help="File of permuted GWAS results for calculating empirical p-values")
     parser.add_argument("--empirical-p-cutoff", type=float, default=1, help="Where to cut off p-values to output based on their empirical p-value")
     parser.add_argument("-r", "--rasterize", default=True, action="store_true",
@@ -110,7 +126,7 @@ def calc_empirical_pvals(results, permfile):
     return(results)
 
 
-def plot_gwas(results, chrom_offsets, outprefix, rasterize=True, sparsify=None, trait="unknown"):
+def plot_gwas(results, chrom_offsets, outprefix, rasterize=True, sparsify=None, trait="unknown", qtl=None, pval_cutoff=0.01):
     print("Plotting Manhatten plots with output prefix", outprefix)
 
     # Reduce least significant hits, always keeping the top 100 and ones with empirical p-value flags
@@ -167,6 +183,16 @@ def plot_gwas(results, chrom_offsets, outprefix, rasterize=True, sparsify=None, 
     for c in chrom_offsets:
         ax_manhatten.axvline(chrom_offsets[c], color="lightgray", zorder=-1)
 
+    # Add QTL locations
+    if qtl is not None:
+        qtl_pos = [mypos + chrom_offsets[mychrom] for mychrom, mypos in zip(qtl['chrom'], qtl['pos'])]
+        for q in qtl_pos:
+            ax_manhatten.axvline(q, color="purple", zorder=-2, linewidth=0.1)
+        hits = results.loc[ results['empirical_pval'] <= pval_cutoff, :]
+        for x in hits['x']:
+            if x in qtl_pos: ax_manhatten.axvline(x, color="red", zorder=-1, linewidth=0.5)     # Any hits done in bright red
+
+
     # Add legend
     dot01 = patches.Patch(color='darkred', label='p ≤ 0.01')
     dot05 = patches.Patch(color='blue', label='p ≤ 0.05')
@@ -179,11 +205,23 @@ def plot_gwas(results, chrom_offsets, outprefix, rasterize=True, sparsify=None, 
     ax_manhatten.set_xlim(left=min_x-pad, right=max_x+pad*2)
 
 
-    # TODO: Add QQ plot?
-
-
-
     fig.savefig(outprefix + ".png", dpi=150)
+
+
+def load_qtl(qtlfile, hapmap, trait):
+    print("Loading QTL simulation parameters from",qtlfile)
+    qtl_data = pd.read_table(qtlfile)
+    qtl_data['name'] = [n.replace(".", "_") for n in qtl_data['name']]  # Change name to have just underscores so matche
+    target = qtl_data['name'] == trait # Identify which row corresponds to this trait
+    myqtl = qtl_data.loc[target, "qtn"].iloc[0] # Pull out comma-separated list of QTN names
+    myqtl = set(myqtl.split(','))
+
+    print("\tMatching with hapmap data from", hapmap)
+    hmp = pd.read_table(hapmap)
+    tokeep = [s in myqtl for s in hmp['rs#']]   # Identify which sites in the hapmap are actually tagged as QTL for this trait
+    qtl = hmp.loc[tokeep, ['rs#', 'chrom', 'pos']]
+    print("\t\tLocated",len(qtl),"qtl to plot")
+    return qtl
 
 
 def set_color(p, cutoff, chrom):
